@@ -25,6 +25,7 @@ from zzz_od.operation.transport import Transport
 from . import graphics_restore_const, graphics_restore_screen
 from .graphics_restore_config import GraphicsRestoreConfig
 from .graphics_restore_screen import GraphicsRow
+from .graphics_restore_snapshot import LowSnapshotReader
 
 if TYPE_CHECKING:
     from numpy import ndarray
@@ -128,26 +129,23 @@ class GraphicsRestoreApp(ZApplication):
         return self.round_retry(status=f'{row.label} 改动未生效，当前 {after}')
 
     def _resolve_targets(self) -> None:
-        """优先用降画质插件留下的快照，缺项用兜底档位补。"""
-        snapshot_fps = ''
-        snapshot_render_scale = ''
-        snapshot_antialias = ''
+        """优先用降画质插件留下的全局快照，缺项用兜底档位补。"""
         try:
-            low_config = self.ctx.run_context.get_config(
-                app_id='graphics_low',
-                instance_idx=self.ctx.current_instance_idx,
-                group_id=application_const.DEFAULT_GROUP_ID,
-            )
-            snapshot_fps = low_config.original_fps
-            snapshot_render_scale = low_config.original_render_scale
-            snapshot_antialias = low_config.original_antialias
+            snapshot = LowSnapshotReader()
         except Exception:
             log.warning('读不到「降低游戏画质」的快照，改用兜底档位', exc_info=True)
+            snapshot = None
 
         self.targets = {
-            'fps': snapshot_fps or self.config.fallback_fps,
-            'render_scale': snapshot_render_scale or self.config.fallback_render_scale,
-            'antialias': snapshot_antialias or self.config.fallback_antialias,
+            'fps': (snapshot.original_fps if snapshot else '') or self.config.fallback_fps,
+            'render_scale': (
+                (snapshot.original_render_scale if snapshot else '')
+                or self.config.fallback_render_scale
+            ),
+            'antialias': (
+                (snapshot.original_antialias if snapshot else '')
+                or self.config.fallback_antialias
+            ),
         }
 
     # ─── 节点 ─────────────────────────────────────────────

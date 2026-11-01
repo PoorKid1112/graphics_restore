@@ -17,7 +17,7 @@
 
 ## 目标档位从哪来
 
-1. 优先读「降低游戏画质」插件配置里的 `original_fps` / `original_render_scale` / `original_antialias`。
+1. 优先读 `config/graphics_low_snapshot.yml`（「降低游戏画质」记下的全局快照，不分实例）里的 `original_fps` / `original_render_scale` / `original_antialias`。
 2. 缺哪项就用本插件的兜底档位补。
 
 在一条龙的运行列表里点本应用右侧的设置按钮，会从右侧滑入一页独立设置界面，三个兜底档位各一个下拉框，页面底部同时显示「降低游戏画质」记下的当前原始档位。
@@ -29,6 +29,8 @@
 | 兜底抗锯齿 | SMAA |
 
 没装「降低游戏画质」、或者它从没跑成功过，就全部用兜底档位。
+
+这不是通过 import 降画质插件的代码拿到的：两个插件分开安装，只装恢复画质时 import 会直接崩。这里按同一个配置文件名 `graphics_low_snapshot.yml` 直接打开那个文件读，文件不存在读到的就是空串，自然落到兜底档位。
 
 ## 执行链路
 

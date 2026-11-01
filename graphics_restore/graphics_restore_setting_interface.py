@@ -23,13 +23,11 @@ from one_dragon_qt.widgets.vertical_scroll_interface import VerticalScrollInterf
 
 from . import graphics_restore_const
 from .graphics_restore_config import GraphicsRestoreConfig
+from .graphics_restore_snapshot import LowSnapshotReader
 
 if TYPE_CHECKING:
     from one_dragon.base.operation.one_dragon_context import OneDragonContext
 
-
-# 降画质插件的 app_id。两个插件是各自独立的包，只能按 id 字符串跨插件取配置
-LOW_APP_ID = 'graphics_low'
 
 # 下拉选项必须和游戏内文字一一对应
 FPS_OPTIONS: list[ConfigItem] = [
@@ -134,22 +132,18 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
             return
 
         try:
-            low_config = self.ctx.run_context.get_config(
-                app_id=LOW_APP_ID,
-                instance_idx=self.ctx.current_instance_idx,
-                group_id=self.group_id,
-            )
+            snapshot = LowSnapshotReader()
         except Exception:
-            log.warning('读不到「降低游戏画质」的配置', exc_info=True)
+            log.warning('读不到「降低游戏画质」的快照', exc_info=True)
             self.snapshot_label.setText('没有装「降低游戏画质」，会直接使用上面的兜底档位')
             return
 
-        if low_config.original_fps == '':
+        if not snapshot.has_snapshot:
             self.snapshot_label.setText('「降低游戏画质」还没记录原始档位，会直接使用上面的兜底档位')
             return
 
         self.snapshot_label.setText(
-            f'当前原始档位：帧率 {low_config.original_fps} / 渲染精度 '
-            f'{low_config.original_render_scale} / 抗锯齿 {low_config.original_antialias}'
-            f'（{low_config.snapshot_date} 记录，可在「降低游戏画质」的设置页里清空）'
+            f'当前原始档位：帧率 {snapshot.original_fps} / 渲染精度 '
+            f'{snapshot.original_render_scale} / 抗锯齿 {snapshot.original_antialias}'
+            f'（{snapshot.snapshot_date} 记录，可在「降低游戏画质」的设置页里清空）'
         )

@@ -1,0 +1,47 @@
+"""恢复画质插件的配置。
+
+只存兜底档位：原始档位不在这里，运行时从「降低游戏画质」插件的配置里读，
+只有那份快照缺失（没装降画质插件、或从没跑过）时才用这里的 fallback_*。
+"""
+
+from one_dragon.base.operation.application.application_config import ApplicationConfig
+
+from . import graphics_restore_const
+
+
+class GraphicsRestoreConfig(ApplicationConfig):
+
+    def __init__(self, instance_idx: int, group_id: str) -> None:
+        ApplicationConfig.__init__(
+            self,
+            app_id=graphics_restore_const.APP_ID,
+            instance_idx=instance_idx,
+            group_id=group_id,
+        )
+
+    @property
+    def fallback_fps(self) -> str:
+        """没有原始记录时用的帧率。"""
+        return self.get('fallback_fps', '60')
+
+    @fallback_fps.setter
+    def fallback_fps(self, new_value: str) -> None:
+        self.update('fallback_fps', new_value)
+
+    @property
+    def fallback_render_scale(self) -> str:
+        """没有原始记录时用的渲染精度。"""
+        return self.get('fallback_render_scale', '1.0')
+
+    @fallback_render_scale.setter
+    def fallback_render_scale(self, new_value: str) -> None:
+        self.update('fallback_render_scale', new_value)
+
+    @property
+    def fallback_antialias(self) -> str:
+        """没有原始记录时用的抗锯齿。"""
+        return self.get('fallback_antialias', 'SMAA')
+
+    @fallback_antialias.setter
+    def fallback_antialias(self, new_value: str) -> None:
+        self.update('fallback_antialias', new_value)

@@ -1,0 +1,25 @@
+{
+  "id": "graphics_restore",
+  "name": "恢复游戏画质",
+  "summary": "把帧率、渲染精度、抗锯齿恢复成「降低游戏画质」记录的原始档位，没有记录时用兜底档位。",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "defaultGroup": true,
+  "needNotify": false,
+  "author": {
+    "name": "kinggod899",
+    "url": "https://github.com/kinggod899"
+  },
+  "homepage": "https://github.com/kinggod899/graphics_restore",
+  "cover": "cover.png",
+  "risk": [
+    "automation",
+    "filesystem"
+  ],
+  "compatibility": {
+    "minAppVersion": "2.0.0",
+    "minCoreApiVersion": 1,
+    "python": ">=3.11"
+  },
+  "apps": []
+}

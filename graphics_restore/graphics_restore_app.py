@@ -2,9 +2,10 @@
 
 执行链路：传送录像店 → 回到大世界 → 点左上「菜单」开暂停菜单 → 点底部「设置」
 → 确认停在「画面」页签 → 读「降低游戏画质」插件留下的快照 → 逐项改回去
-→ 连点两次返回回到大世界。
+→ 切到「其他」页签 → 改字体选项 → 连点两次返回回到大世界。
 
 快照读不到时（没装降画质插件 / 从没跑过）用配置里的兜底档位。
+快照是旧版本记的、里面没有 original_font 时不动字体。
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
 
 
 class GraphicsRestoreApp(ZApplication):
-    """把帧率、渲染精度、抗锯齿恢复成降画质前的档位。"""
+    """把帧率、渲染精度、抗锯齿、字体恢复成降画质前的档位。"""
 
     def __init__(self, ctx: ZContext) -> None:
         ZApplication.__init__(
@@ -95,6 +96,18 @@ class GraphicsRestoreApp(ZApplication):
                 return option
         return ''
 
+    def _has_font_row(self, screen: ndarray) -> bool:
+        """右侧标签列里有没有「字体选项」，用它判断当前在不在「其他」页。"""
+        matches = self.ctx.ocr_service.get_ocr_result_list(
+            screen, rect=graphics_restore_screen.LABEL_COLUMN, crop_first=True,
+        )
+        for match in matches:
+            if str_utils.find_by_lcs(
+                graphics_restore_screen.OTHER_PANEL_KEYWORD, match.data, percent=0.8,
+            ):
+                return True
+        return False
+
     def _apply_row(self, row: GraphicsRow, target: str) -> OperationRoundResult:
         """把一行下拉框改成目标值。
 
@@ -146,7 +159,25 @@ class GraphicsRestoreApp(ZApplication):
                 (snapshot.original_antialias if snapshot else '')
                 or self.config.fallback_antialias
             ),
+            'font': self._resolve_font(snapshot),
         }
+
+    def _resolve_font(self, snapshot: LowSnapshotReader | None) -> str:
+        """字体这一项目标值的取法，和上面三项略有不同。
+
+        完全没有记录（快照里的 original_fps 都是空的）时，和上面三项一样落到兜底字体。
+        但快照有记录、只是没有 original_font 时不能落到兜底：那是老版本记下的快照，
+        当时降画质插件还没开始改字体，说明字体没被动过，兜底值反而会覆盖用户自己的选择。
+        这种情况返回空串，调用方会整段跳过字体。
+        """
+        if snapshot is None:
+            return self.config.fallback_font
+        if snapshot.original_font != '':
+            return snapshot.original_font
+        if snapshot.has_snapshot:
+            log.warning('快照里没有原始字体（旧版本记录），本次不恢复字体')
+            return ''
+        return self.config.fallback_font
 
     # ─── 节点 ─────────────────────────────────────────────
 
@@ -222,6 +253,26 @@ class GraphicsRestoreApp(ZApplication):
         return self._apply_row(graphics_restore_screen.ANTIALIAS_ROW, self.targets.get('antialias', ''))
 
     @node_from(from_name='恢复抗锯齿')
+    @operation_node(name='切到其他页签', screenshot_before_round=False, node_max_retry_times=5)
+    def switch_to_other_tab(self) -> OperationRoundResult:
+        """字体在「其他」页。没有目标字体时整段跳过，不白切一次页签。"""
+        if self.targets.get('font', '') == '':
+            return self.round_success('没有目标字体，跳过')
+        if self._has_font_row(self.screenshot()):
+            return self.round_success('已在其他页')
+        self._click_point(graphics_restore_screen.OTHER_TAB_POINT, graphics_restore_screen.MENU_WAIT)
+        if self._has_font_row(self.screenshot()):
+            return self.round_success('已切到其他页')
+        return self.round_retry('没切到其他页', wait=1)
+
+    @node_from(from_name='切到其他页签')
+    @operation_node(name='恢复字体', screenshot_before_round=False)
+    def restore_font(self) -> OperationRoundResult:
+        return self._apply_row(
+            graphics_restore_screen.FONT_ROW, self.targets.get('font', ''),
+        )
+
+    @node_from(from_name='恢复字体')
     @operation_node(name='返回大世界', screenshot_before_round=False)
     def back_out(self) -> OperationRoundResult:
         self._click_point(graphics_restore_screen.BACK_POINT, graphics_restore_screen.BACK_WAIT)

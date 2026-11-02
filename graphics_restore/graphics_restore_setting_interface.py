@@ -45,6 +45,11 @@ ANTIALIAS_OPTIONS: list[ConfigItem] = [
     ConfigItem('TAA', 'TAA'),
     ConfigItem('SMAA', 'SMAA'),
 ]
+FONT_OPTIONS: list[ConfigItem] = [
+    ConfigItem('推荐方案', '推荐方案'),
+    ConfigItem('全局粗体', '全局粗体'),
+    ConfigItem('全局细体', '全局细体'),
+]
 
 
 class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
@@ -62,6 +67,7 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
         self.fps_opt: ComboBoxSettingCard | None = None
         self.render_scale_opt: ComboBoxSettingCard | None = None
         self.antialias_opt: ComboBoxSettingCard | None = None
+        self.font_opt: ComboBoxSettingCard | None = None
         self.snapshot_label: CaptionLabel | None = None
 
     def get_content_widget(self) -> QWidget:
@@ -72,7 +78,7 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
 
         intro = CaptionLabel(
             '正常情况下恢复成「降低游戏画质」第一次运行时记下的档位，'
-            '只有那份记录缺失时才用下面这三个兜底值。',
+            '只有那份记录缺失时才用下面这四个兜底值。',
             widget,
         )
         intro.setWordWrap(True)
@@ -102,6 +108,14 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
         )
         layout.addWidget(self.antialias_opt)
 
+        self.font_opt = ComboBoxSettingCard(
+            icon=FluentIcon.FONT,
+            title='兜底字体',
+            content='没有原始记录时恢复成这一档',
+            options_list=FONT_OPTIONS,
+        )
+        layout.addWidget(self.font_opt)
+
         self.snapshot_label = CaptionLabel('正在读取原始档位记录…', widget)
         self.snapshot_label.setWordWrap(True)
         layout.addWidget(self.snapshot_label)
@@ -124,6 +138,7 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
         self.antialias_opt.init_with_adapter(
             get_prop_adapter(self.config, 'fallback_antialias')
         )
+        self.font_opt.init_with_adapter(get_prop_adapter(self.config, 'fallback_font'))
         self._update_snapshot_display()
 
     def _update_snapshot_display(self) -> None:
@@ -144,6 +159,7 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
 
         self.snapshot_label.setText(
             f'当前原始档位：帧率 {snapshot.original_fps} / 渲染精度 '
-            f'{snapshot.original_render_scale} / 抗锯齿 {snapshot.original_antialias}'
+            f'{snapshot.original_render_scale} / 抗锯齿 {snapshot.original_antialias} / '
+            f'字体 {snapshot.original_font or "未记录（不恢复字体）"}'
             f'（{snapshot.snapshot_date} 记录，可在「降低游戏画质」的设置页里清空）'
         )

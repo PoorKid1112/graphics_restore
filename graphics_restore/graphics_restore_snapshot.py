@@ -39,6 +39,15 @@ class LowSnapshotReader(YamlConfig):
         return self.get('original_antialias', '')
 
     @property
+    def original_font(self) -> str:
+        """原始字体选项，空串表示没有记录。
+
+        降画质插件切到「其他」页之后才补记这一项，所以老版本留下的快照里可能没有它，
+        那时即使 has_snapshot 为 True，original_font 也还是空串。
+        """
+        return self.get('original_font', '')
+
+    @property
     def snapshot_date(self) -> str:
         """记录日期，空串表示没有记录。"""
         return self.get('snapshot_date', '')

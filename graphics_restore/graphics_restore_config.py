@@ -56,3 +56,12 @@ class GraphicsRestoreConfig(ApplicationConfig):
     @fallback_antialias.setter
     def fallback_antialias(self, new_value: str) -> None:
         self.update('fallback_antialias', new_value)
+
+    @property
+    def fallback_font(self) -> str:
+        """完全没有原始记录时用的字体。"""
+        return self.get('fallback_font', '全局细体')
+
+    @fallback_font.setter
+    def fallback_font(self, new_value: str) -> None:
+        self.update('fallback_font', new_value)

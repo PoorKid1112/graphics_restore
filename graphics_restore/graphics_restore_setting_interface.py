@@ -1,8 +1,9 @@
 """恢复画质插件的设置页。
 
-这里只放「兜底档位」：正常情况下恢复成「降低游戏画质」记下的原始档位，
-只有那份记录缺失（没装降画质插件、或从没跑成功过）时才用这里的值。
-页面下方会显示当前读到的原始档位，方便对照。
+这里放「兜底档位」和「只用兜底档位」开关：正常情况下恢复成「降低游戏画质」
+记下的原始档位，只有那份记录缺失（没装降画质插件、或从没跑成功过）时才用兜底值。
+开关打开后一律按兜底值恢复，不再读降画质插件的记录。
+页面下方会显示当前读到的原始档位和这次实际会用哪套值，方便对照。
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from one_dragon_qt.utils.config_utils import get_prop_adapter
 from one_dragon_qt.widgets.setting_card.combo_box_setting_card import (
     ComboBoxSettingCard,
 )
+from one_dragon_qt.widgets.setting_card.switch_setting_card import SwitchSettingCard
 from one_dragon_qt.widgets.vertical_scroll_interface import VerticalScrollInterface
 
 from . import graphics_restore_const
@@ -59,6 +61,7 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
         )
         self.ctx: OneDragonContext = ctx
         self.config: GraphicsRestoreConfig | None = None
+        self.fallback_only_opt: SwitchSettingCard | None = None
         self.fps_opt: ComboBoxSettingCard | None = None
         self.render_scale_opt: ComboBoxSettingCard | None = None
         self.antialias_opt: ComboBoxSettingCard | None = None
@@ -77,6 +80,14 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
         )
         intro.setWordWrap(True)
         layout.addWidget(intro)
+
+        self.fallback_only_opt = SwitchSettingCard(
+            icon=FluentIcon.SYNC,
+            title='只用兜底档位',
+            content='打开后不看「降低游戏画质」记录了什么，每次都按下面三档恢复',
+        )
+        self.fallback_only_opt.value_changed.connect(self._on_fallback_only_changed)
+        layout.addWidget(self.fallback_only_opt)
 
         self.fps_opt = ComboBoxSettingCard(
             icon=FluentIcon.SPEED_HIGH,
@@ -117,6 +128,9 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
             instance_idx=self.ctx.current_instance_idx,
             group_id=self.group_id,
         )
+        self.fallback_only_opt.init_with_adapter(
+            get_prop_adapter(self.config, 'use_fallback_only')
+        )
         self.fps_opt.init_with_adapter(get_prop_adapter(self.config, 'fallback_fps'))
         self.render_scale_opt.init_with_adapter(
             get_prop_adapter(self.config, 'fallback_render_scale')
@@ -126,9 +140,21 @@ class GraphicsRestoreSettingInterface(VerticalScrollInterface, GroupIdMixin):
         )
         self._update_snapshot_display()
 
+    def _on_fallback_only_changed(self, checked: bool) -> None:
+        """开关一动就刷新下方说明，让人立刻看到这次会用哪套值。"""
+        self._update_snapshot_display()
+
     def _update_snapshot_display(self) -> None:
-        """显示「降低游戏画质」记下的原始档位。"""
+        """显示「降低游戏画质」记下的原始档位，以及这次实际会用哪套值。"""
         if self.snapshot_label is None or self.config is None:
+            return
+
+        if self.config.use_fallback_only:
+            self.snapshot_label.setText(
+                f'已开启「只用兜底档位」：这次会恢复成帧率 {self.config.fallback_fps} / '
+                f'渲染精度 {self.config.fallback_render_scale} / '
+                f'抗锯齿 {self.config.fallback_antialias}，不读降画质插件的记录'
+            )
             return
 
         try:

@@ -6,5 +6,5 @@ NEED_NOTIFY = False
 
 PLUGIN_AUTHOR = "kinggod899"
 PLUGIN_HOMEPAGE = "https://github.com/kinggod899/graphics_restore"
-PLUGIN_VERSION = "1.1.0"
+PLUGIN_VERSION = "1.2.0"
 PLUGIN_DESCRIPTION = "把帧率、渲染精度、抗锯齿恢复成「降低游戏画质」记录的原始档位，没有记录时用兜底档位。"

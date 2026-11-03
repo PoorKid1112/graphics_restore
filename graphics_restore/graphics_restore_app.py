@@ -5,6 +5,7 @@
 → 连点两次返回回到大世界。
 
 快照读不到时（没装降画质插件 / 从没跑过）用配置里的兜底档位。
+设置里打开「只用兜底档位」后，不再读快照，一律按兜底档位恢复。
 """
 
 from __future__ import annotations
@@ -129,7 +130,16 @@ class GraphicsRestoreApp(ZApplication):
         return self.round_retry(status=f'{row.label} 改动未生效，当前 {after}')
 
     def _resolve_targets(self) -> None:
-        """优先用降画质插件留下的全局快照，缺项用兜底档位补。"""
+        """决定三个目标值：默认读降画质插件留下的快照，缺项用兜底档位补。"""
+        if self.config.use_fallback_only:
+            log.info('已开启「只用兜底档位」，不读降画质插件的记录')
+            self.targets = {
+                'fps': self.config.fallback_fps,
+                'render_scale': self.config.fallback_render_scale,
+                'antialias': self.config.fallback_antialias,
+            }
+            return
+
         try:
             snapshot = LowSnapshotReader()
         except Exception:
